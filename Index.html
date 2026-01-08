@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>System Diagnostic</title>
+    <script src="https://unpkg.com/nosleep.js@0.12.0/dist/NoSleep.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: 'Roboto', sans-serif; }
+        
+        #setup-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; cursor: pointer;
+        }
+
+        /* Android-style Always-On Display */
+        #aod-clock {
+            color: rgba(255, 255, 255, 0.18);
+            font-size: 54px;
+            font-weight: 300;
+            margin-bottom: 8px;
+            display: none;
+        }
+
+        #aod-info {
+            color: rgba(255, 255, 255, 0.12);
+            font-size: 13px;
+            display: none;
+        }
+
+        #notif-dot {
+            width: 4px; height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen" onclick="startPerformance()">
+        <div id="aod-clock">00:00</div>
+        <div id="aod-info">78% • Charging</div>
+        <div id="notif-dot"></div>
+    </div>
+
+    <script>
+        const noSleep = new NoSleep();
+        const TRIGGER_PHRASE = "imagine"; 
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.lang = 'en-GB';
+
+        function startPerformance() {
+            noSleep.enable();
+            recognition.start();
+            
+            // Show AOD Dummy Screen
+            document.getElementById('aod-clock').style.display = "block";
+            document.getElementById('aod-info').style.display = "block";
+            document.getElementById('notif-dot').style.display = "none";
+
+            updateClock();
+            if (navigator.vibrate) navigator.vibrate([40, 40, 40]);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('aod-clock').innerText = timeStr;
+        }
+
+        recognition.onresult = (event) => {
+            const result = event.results[event.results.length - 1];
+            const transcript = result[0].transcript.toLowerCase().trim();
+            const confidence = result[0].confidence;
+
+            if (transcript.includes(TRIGGER_PHRASE) && confidence > 0.75) {
+                const songQuery = transcript.split(TRIGGER_PHRASE).pop().trim();
+                
+                if (songQuery.length > 1) {
+                    // ACTION: Redirect immediately to start loading the app
+                    const spotifyUrl = `spotify:search:${encodeURIComponent(songQuery)}`;
+                    window.location.replace(spotifyUrl);
+
+                    // TIMER: Wait 3 seconds for Spotify to load before giving the "Go" signal
+                    setTimeout(() => {
+                        if (navigator.vibrate) navigator.vibrate(250); // The "Start Volume Up" cue
+                    }, 3000);
+                }
+            }
+        };
+
+        recognition.onend = () => { recognition.start(); };
+        setInterval(updateClock, 30000);
+    </script>
+</body>
+</html>
