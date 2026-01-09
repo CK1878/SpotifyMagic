@@ -49,7 +49,7 @@
         const noSleep = new NoSleep();
         const TRIGGER_PHRASE = "imagine"; 
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.lang = 'en-GB';
@@ -82,18 +82,19 @@
                 const songQuery = transcript.split(TRIGGER_PHRASE).pop().trim();
                 
                 if (songQuery.length > 1) {
-                    // ACTION: Redirect immediately to start loading the app
-                    const spotifyUrl = `spotify:search:${encodeURIComponent(songQuery)}`;
+                    // ACTION: Launch Spotify with the "Play Search" URI
+                    const spotifyUrl = `spotify:play:search:${encodeURIComponent(songQuery)}`;
                     window.location.replace(spotifyUrl);
 
-                    // TIMER: Wait 3 seconds for Spotify to load before giving the "Go" signal
+                    // TIMER: Wait 3 seconds for Spotify to load before vibrating your "Go" signal
                     setTimeout(() => {
-                        if (navigator.vibrate) navigator.vibrate(250); // The "Start Volume Up" cue
+                        if (navigator.vibrate) navigator.vibrate(250); 
                     }, 3000);
                 }
             }
         };
 
+        // Auto-restart recognition if it drops
         recognition.onend = () => { recognition.start(); };
         setInterval(updateClock, 30000);
     </script>
